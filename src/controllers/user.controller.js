@@ -3,11 +3,12 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
+import fs from "fs";
 
 const registerUser = asyncHandler(async (req, res) => {
   // 1. get user details from front end
   const { userName, email, fullName, password } = req.body;
-  console.log({ userName, email, fullName, password });
+  // console.log({ userName, email, fullName, password });
 
   //2. form data validation - not empty
   if (
@@ -21,12 +22,24 @@ const registerUser = asyncHandler(async (req, res) => {
     $or: [{ userName }, { email }],
   });
   if (existingUser) {
+    // remove local files even if the user already exists
+    fs.unlinkSync(req.files?.avatar[0]?.path);
+    fs.unlinkSync(req.files?.coverImg[0]?.path);
     throw new ApiError(409, "User already exists.");
   }
 
   // 4. check for images and avatar is required
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImgLocalPath = req.files?.coverImg[0]?.path;
+  // const coverImgLocalPath = req.files?.coverImg[0]?.path;
+  let coverImgLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImg) &&
+    req.files.coverImg.length > 0
+  ) {
+    coverImgLocalPath = req.files.coverImg[0].path;
+  }
+
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is required.");
   }
