@@ -26,7 +26,6 @@ const generateAccessTokenAndRefreshToken = async (userId) => {
 const registerUser = asyncHandler(async (req, res) => {
   // 1. get user details from front end
   const { userName, email, fullName, password } = req.body;
-  // console.log({ userName, email, fullName, password });
 
   //2. form data validation - not empty
   if (
@@ -98,7 +97,7 @@ const registerUser = asyncHandler(async (req, res) => {
 const loginUser = asyncHandler(async (req, res) => {
   // 1. get data from body
   const { userName, email, password } = req.body;
-  if (!userName || !email) {
+  if (!userName && !email) {
     throw new ApiError(400, "user name or email is required.");
   }
 
@@ -106,7 +105,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const user = await User.findOne({
     $or: [{ userName }, { email }],
   });
-  console.log(user);
+
   if (!user) {
     throw new ApiError(404, "user does not exist.");
   }
@@ -124,7 +123,7 @@ const loginUser = asyncHandler(async (req, res) => {
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
-  console.log(loggedInUser);
+  // console.log(loggedInUser);
 
   // 5.make secured api
   const options = {
@@ -150,4 +149,29 @@ const loginUser = asyncHandler(async (req, res) => {
     );
 });
 
-export { registerUser, loginUser };
+const logoutUser = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        refreshToken: undefined,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, {}, "User logged out."));
+});
+
+export { registerUser, loginUser, logoutUser };
