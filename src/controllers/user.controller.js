@@ -117,9 +117,13 @@ const loginUser = asyncHandler(async (req, res) => {
   }
 
   //  4. access token and refresh token
-  const { accessToken, refreshToken } = generateAccessTokenAndRefreshToken(
-    user._id
-  );
+  const { accessToken, refreshToken } =
+    await generateAccessTokenAndRefreshToken(user._id);
+
+  if (!(accessToken && refreshToken)) {
+    throw new ApiError(401, "Access Token and Refresh Token not found!");
+  }
+
   const loggedInUser = await User.findById(user._id).select(
     "-password -refreshToken"
   );
@@ -154,7 +158,7 @@ const logoutUser = asyncHandler(async (req, res) => {
     req.user?._id,
     {
       $set: {
-        refreshToken: undefined,
+        refreshToken: null,
       },
     },
     {
