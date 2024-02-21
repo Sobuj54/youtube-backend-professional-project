@@ -246,7 +246,9 @@ const changeCurrentPassword = asyncHandler(async (req, res) => {
 });
 
 const getCurrentUser = asyncHandler(async (req, res) => {
-  return res.status(200).json(200, req?.user, "User fetched successfully.");
+  return res
+    .status(200)
+    .json(new ApiResponse(200, req?.user, "User fetched successfully."));
 });
 
 const updateAccountDetails = asyncHandler(async (req, res) => {
@@ -255,7 +257,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     throw new ApiError(400, "All fields are required.");
   }
 
-  const user = await User.findByIdAndUpdate(
+  await User.findByIdAndUpdate(
     req.user?._id,
     {
       $set: {
@@ -267,7 +269,6 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
       new: true,
     }
   ).select("-password -refreshToken");
-  console.log("update user:", user);
 
   return res
     .status(200)
@@ -286,8 +287,6 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Error while uploading avatar on cloudinary.");
   }
 
-  fs.unlinkSync(avatarLocalPath);
-
   const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
     {
@@ -302,7 +301,9 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(200, updatedUser, "User avatar updated successfully.");
+    .json(
+      new ApiResponse(200, updatedUser, "User avatar updated successfully.")
+    );
 });
 
 const updateUserCoverImg = asyncHandler(async (req, res) => {
@@ -316,8 +317,6 @@ const updateUserCoverImg = asyncHandler(async (req, res) => {
   if (!coverImg.url) {
     throw new ApiError(400, "Error while uploading avatar on cloudinary.");
   }
-
-  fs.unlinkSync(coverImgLocalPath);
 
   const updatedUser = await User.findByIdAndUpdate(
     req.user?._id,
@@ -333,7 +332,13 @@ const updateUserCoverImg = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(200, updatedUser, "User cover image updated successfully.");
+    .json(
+      new ApiResponse(
+        200,
+        updatedUser,
+        "User cover image updated successfully."
+      )
+    );
 });
 
 export {
