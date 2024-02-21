@@ -274,6 +274,68 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "User updated Successfully."));
 });
 
+const updateUserAvatar = asyncHandler(async (req, res) => {
+  const avatarLocalPath = req.file?.path;
+  if (!avatarLocalPath) {
+    throw new ApiError(404, "Avatar is not found.");
+  }
+
+  const avatar = await uploadOnCloudinary(avatarLocalPath);
+
+  if (!avatar.url) {
+    throw new ApiError(400, "Error while uploading avatar on cloudinary.");
+  }
+
+  fs.unlinkSync(avatarLocalPath);
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(200, updatedUser, "User avatar updated successfully.");
+});
+
+const updateUserCoverImg = asyncHandler(async (req, res) => {
+  const coverImgLocalPath = req.file?.path;
+  if (!coverImgLocalPath) {
+    throw new ApiError(404, "Cover image is not found.");
+  }
+
+  const coverImg = await uploadOnCloudinary(coverImgLocalPath);
+
+  if (!coverImg.url) {
+    throw new ApiError(400, "Error while uploading avatar on cloudinary.");
+  }
+
+  fs.unlinkSync(coverImgLocalPath);
+
+  const updatedUser = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImg: coverImg.url,
+      },
+    },
+    {
+      new: true,
+    }
+  ).select("-password -refreshToken");
+
+  return res
+    .status(200)
+    .json(200, updatedUser, "User cover image updated successfully.");
+});
+
 export {
   registerUser,
   loginUser,
@@ -282,4 +344,6 @@ export {
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails,
+  updateUserAvatar,
+  updateUserCoverImg,
 };
