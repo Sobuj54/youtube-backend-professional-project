@@ -341,6 +341,79 @@ const updateUserCoverImg = asyncHandler(async (req, res) => {
     );
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { userName } = req.params;
+
+  if (!userName?.trim()) {
+    throw new ApiError(400, "User name is missing.");
+  }
+
+  const channel = await User.aggregate([
+    {
+      $match: {
+        userName: userName?.toLowerCase(),
+      },
+    },
+    {
+      $lookup: {
+        //this lookup gives us all the subscribers
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        //this lookup gives all the channel a user is subscribed to
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        subscriberCount: {
+          $size: "$subscribers", //this gives us the total subscriber count.
+        },
+        channelsSubscribedTo: {
+          $size: "$subscribedTo", //this gives us the total subscribed channels count.
+        },
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, "$subscribers.subscriber"] }, //this condition searches user id inside subscriber field
+            then: true,
+            else: false,
+          },
+        },
+      },
+    },
+    {
+      // project sends only the selected fields
+      $project: {
+        fullName: 1,
+        userName: 1,
+        subscriberCount: 1,
+        channelsSubscribedTo: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImg: 1,
+        email: 1,
+      },
+    },
+  ]);
+  console.log(channel);
+
+  if (!channel?.length) {
+    throw new ApiError(404, "Channel does not exists.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, channel[0], "Channel fetched successfully."));
+});
+
 export {
   registerUser,
   loginUser,
@@ -351,4 +424,5 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImg,
+  getUserChannelProfile,
 };
