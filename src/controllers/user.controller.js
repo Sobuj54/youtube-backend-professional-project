@@ -414,6 +414,62 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, channel[0], "Channel fetched successfully."));
 });
 
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const user = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(req.user._id), //we can not write req.user._id directly like _id = req.user._id because mongoose automatic object id creation does not work inside pipelines.
+      },
+    },
+    {
+      $lookup: {
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        pipeline: [
+          //sub pipeline
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    userName: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner", //this gives us the first value of owner field array
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  console.log(user);
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        user[0].watchHistory,
+        "Watch history fetched successfully."
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -425,4 +481,5 @@ export {
   updateUserAvatar,
   updateUserCoverImg,
   getUserChannelProfile,
+  getWatchHistory,
 };
