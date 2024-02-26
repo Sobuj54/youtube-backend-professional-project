@@ -34,7 +34,7 @@ router.route("/:videoId").get(getVideoById); //tested
 
 router.route("/update/:videoId").patch(updateVideo); //tested
 
-router.route("/toggle-status/:videoId").patch(togglePublishStatus);
+router.route("/toggle-status/:videoId").patch(togglePublishStatus); //tested
 
 router.route("/delete/:videoId").delete(deleteVideo); //tested
 
