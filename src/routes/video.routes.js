@@ -5,6 +5,7 @@ import {
   getAllVideos,
   getVideoById,
   publishVideo,
+  togglePublishStatus,
   updateVideo,
 } from "../controllers/video.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
@@ -32,6 +33,8 @@ router.route("/publish").post(
 router.route("/:videoId").get(getVideoById); //tested
 
 router.route("/update/:videoId").patch(updateVideo); //tested
+
+router.route("/toggle-status/:videoId").patch(togglePublishStatus);
 
 router.route("/delete/:videoId").delete(deleteVideo); //tested
 

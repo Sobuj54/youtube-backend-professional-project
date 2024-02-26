@@ -40,6 +40,7 @@ const publishVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video successfully uploaded."));
 });
 
+// TODO: needs bug fixing in following code
 const getAllVideos = asyncHandler(async (req, res) => {
   let {
     page = 1,
@@ -170,4 +171,56 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Video deleted successfully."));
 });
 
-export { publishVideo, getVideoById, updateVideo, deleteVideo, getAllVideos };
+const togglePublishStatus = asyncHandler(async (req, res) => {
+  const { videoId } = req.params;
+  if (!videoId) {
+    throw new ApiError(400, "video id is required.");
+  }
+
+  const toggledVideo = await Video.findOneAndUpdate(
+    {
+      _id: videoId,
+      owner: req.user?._id,
+    },
+    [
+      //used an array here because $set is using aggregate operators inside
+      {
+        $set: {
+          isPublished: {
+            $cond: {
+              if: { $eq: ["$isPublished", true] }, //check if isPublished is true or not
+              then: false, //if true, set false
+              else: true, //if false , set true
+            },
+          },
+        },
+      },
+    ],
+    {
+      new: true,
+    }
+  );
+
+  if (!toggledVideo) {
+    throw new ApiError(404, "Video not found.");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        toggledVideo,
+        "Published status toggled successfully."
+      )
+    );
+});
+
+export {
+  publishVideo,
+  getVideoById,
+  updateVideo,
+  deleteVideo,
+  getAllVideos,
+  togglePublishStatus,
+};
