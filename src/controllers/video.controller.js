@@ -7,21 +7,18 @@ import { uploadOnCloudinary } from "../utils/cloudinary.js";
 
 const publishVideo = asyncHandler(async (req, res) => {
   const { title, description } = req.body;
-
   if (!(title?.trim() && description?.trim())) {
     throw new ApiError(400, "Title and description is required");
   }
 
   const videoFileLocalPath = req.files?.videoFile[0]?.path;
   const thumbnailFileLocalPath = req.files?.thumbnail[0]?.path;
-
   if (!(videoFileLocalPath && thumbnailFileLocalPath)) {
     throw new ApiError(400, "video and thumbnail not found");
   }
 
   const videoFile = await uploadOnCloudinary(videoFileLocalPath);
   const thumbnail = await uploadOnCloudinary(thumbnailFileLocalPath);
-
   if (!(videoFile.url && thumbnail.url)) {
     throw new ApiError(500, "Video upload failed");
   }
@@ -50,7 +47,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
     sortBy = "asc",
     userId,
   } = req.query;
-
   if (!userId) {
     throw new ApiError(400, "User id is required in query.");
   }
@@ -83,7 +79,6 @@ const getAllVideos = asyncHandler(async (req, res) => {
     ],
     options
   );
-
   if (!result) {
     throw new ApiError("No result found.");
   }
@@ -100,7 +95,6 @@ const getVideoById = asyncHandler(async (req, res) => {
   }
 
   const video = await Video.findById(videoId);
-
   if (!video) {
     throw new ApiError(400, "video not found.");
   }
@@ -136,7 +130,6 @@ const updateVideo = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-
   if (!video) {
     throw new ApiError(401, "Unauthorized.");
   }
@@ -161,7 +154,6 @@ const deleteVideo = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-
   if (!isDeleted) {
     throw new ApiError(401, "Unauthorized!");
   }
@@ -200,7 +192,6 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
       new: true,
     }
   );
-
   if (!toggledVideo) {
     throw new ApiError(404, "Video not found.");
   }
