@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Video } from "../models/video.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -37,6 +38,58 @@ const publishVideo = asyncHandler(async (req, res) => {
   return res
     .status(200)
     .json(new ApiResponse(200, video, "Video successfully uploaded."));
+});
+
+const getAllVideos = asyncHandler(async (req, res) => {
+  let {
+    page = 1,
+    limit = 10,
+    query,
+    sort = "title",
+    sortBy = "asc",
+    userId,
+  } = req.query;
+
+  if (!userId) {
+    throw new ApiError(400, "User id is required in query.");
+  }
+
+  page = parseInt(page);
+  limit = parseInt(limit);
+
+  let matchQuery = { owner: new mongoose.Types.ObjectId(userId) };
+  if (query) {
+    matchQuery.$or = [
+      { title: { $regex: query, $options: "i" } }, //case insensitive search on title
+      { description: { $regex: query, $options: "i" } }, //case insensitive search on description
+    ];
+  }
+
+  const sortOptions = {};
+  sortOptions[sort] = sortBy === "asc" ? 1 : -1;
+
+  const options = {
+    page,
+    limit,
+    sort: sortOptions,
+  };
+
+  const result = await Video.aggregatePaginate(
+    [
+      {
+        $match: matchQuery,
+      },
+    ],
+    options
+  );
+
+  if (!result) {
+    throw new ApiError("No result found.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, result, "All videos fetched successfully."));
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
@@ -117,4 +170,4 @@ const deleteVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, "Video deleted successfully."));
 });
 
-export { publishVideo, getVideoById, updateVideo, deleteVideo };
+export { publishVideo, getVideoById, updateVideo, deleteVideo, getAllVideos };
