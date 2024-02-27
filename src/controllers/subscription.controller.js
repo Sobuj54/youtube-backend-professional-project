@@ -44,10 +44,37 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
     throw new ApiError(404, "Channel id is required.");
   }
   const subscribers = await Subscription.find({ channel: channelId });
+  if (!subscribers) {
+    throw new ApiError(404, "No subscribers found.");
+  }
 
   return res
     .status(200)
     .json(new ApiResponse(200, subscribers, "Fetched all subscribers."));
 });
 
-export { toggleSubscription, getChannelSubscribers };
+const getSubscribedChannels = asyncHandler(async (req, res) => {
+  const { subscriberId } = req.params;
+  if (!subscriberId) {
+    throw new ApiError(400, "Channel is required.");
+  }
+
+  const subscribedChannels = await Subscription.find({
+    subscriber: subscriberId,
+  });
+  if (!subscribedChannels) {
+    throw new ApiError(404, "No subscribed channels found.");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        subscribedChannels,
+        "Subscribed channels fetched successfully."
+      )
+    );
+});
+
+export { toggleSubscription, getChannelSubscribers, getSubscribedChannels };
