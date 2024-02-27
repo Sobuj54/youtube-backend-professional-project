@@ -30,31 +30,22 @@ router.route("/register").post(
   ]),
   registerUser
 ); //tested
-
 router.route("/login").post(loginUser); //tested
 
 // secured routes
 router.route("/logout").post(verifyJWT, logoutUser); //tested
-
 router.route("/refresh-token").post(refreshAccessToken); //tested
-
 // change password endpoint
 router.route("/change-password").patch(verifyJWT, changeCurrentPassword); //tested
-
 router.route("/current-user").get(verifyJWT, getCurrentUser); //tested
-
 router.route("/update-name-email").patch(verifyJWT, updateAccountDetails); //tested
-
 router
   .route("/update-avatar")
   .patch(verifyJWT, upload.single("avatar"), updateUserAvatar); //tested
-
 router
   .route("/update-coverImg")
   .patch(verifyJWT, upload.single("coverImg"), updateUserCoverImg); //tested
-
 router.route("/channel-profile/:userName").get(getUserChannelProfile);
-
 router.route("/watch-history").get(verifyJWT, getWatchHistory);
 
 export default router;

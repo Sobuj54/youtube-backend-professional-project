@@ -13,8 +13,7 @@ router.use(verifyJWT);
 router
   .route("/channel/:channelId")
   .post(toggleSubscription)
-  .get(getChannelSubscribers);
-
-router.route("/channel/subscribed/:subscriberId").get(getSubscribedChannels);
+  .get(getChannelSubscribers); //tested
+router.route("/channel/subscribed/:subscriberId").get(getSubscribedChannels); //tested
 
 export default router;

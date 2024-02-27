@@ -15,7 +15,6 @@ const router = Router();
 router.use(verifyJWT); //Apply verifyJWT middleware to all the routes in this file
 
 router.route("/").get(getAllVideos);
-
 router.route("/publish").post(
   upload.fields([
     {
@@ -29,13 +28,9 @@ router.route("/publish").post(
   ]),
   publishVideo
 ); //tested
-
 router.route("/:videoId").get(getVideoById); //tested
-
 router.route("/update/:videoId").patch(updateVideo); //tested
-
 router.route("/toggle-status/:videoId").patch(togglePublishStatus); //tested
-
 router.route("/delete/:videoId").delete(deleteVideo); //tested
 
 export default router;
