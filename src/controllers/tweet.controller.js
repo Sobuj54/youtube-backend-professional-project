@@ -22,4 +22,31 @@ const createTweet = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, tweet, "Tweet created successfully."));
 });
 
-export { createTweet };
+const updateTweet = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+  const { content } = req.body;
+  if (!(content?.trim() && tweetId)) {
+    throw new ApiError(400, "Provide content and tweet id to update.");
+  }
+
+  const updatedTweet = await Tweet.findByIdAndUpdate(
+    tweetId,
+    {
+      $set: {
+        content,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+  if (!updatedTweet) {
+    throw new ApiError(500, "Tweet couldn't update.");
+  }
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, updatedTweet, "Tweet updated successfully."));
+});
+
+export { createTweet, updateTweet };
