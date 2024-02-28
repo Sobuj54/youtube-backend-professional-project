@@ -111,7 +111,7 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, subscribers[0], "Fetched all subscribers."));
+    .json(new ApiResponse(200, subscribers, "Fetched all subscribers."));
 });
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
@@ -120,9 +120,68 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Channel is required.");
   }
 
-  const subscribedChannels = await Subscription.find({
-    subscriber: subscriberId,
-  });
+  const subscribedChannels = await Subscription.aggregate([
+    {
+      $match: {
+        subscriber: new mongoose.Types.ObjectId(subscriberId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "subscriber",
+        foreignField: "_id",
+        as: "subscriber",
+        pipeline: [
+          {
+            $project: {
+              userName: 1,
+              fullName: 1,
+              avatar: 1,
+              coverImg: 1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channel",
+        pipeline: [
+          {
+            $project: {
+              userName: 1,
+              fullName: 1,
+              avatar: 1,
+              coverImg: 1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        subscriber: {
+          $first: "$subscriber",
+        },
+        channel: {
+          $first: "$channel",
+        },
+      },
+    },
+    {
+      $project: {
+        subscriber: 1,
+        channel: 1,
+      },
+    },
+  ]);
+  console.log(subscribedChannels);
   if (!subscribedChannels) {
     throw new ApiError(404, "No subscribed channels found.");
   }
