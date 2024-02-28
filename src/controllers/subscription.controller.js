@@ -181,7 +181,6 @@ const getSubscribedChannels = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  console.log(subscribedChannels);
   if (!subscribedChannels) {
     throw new ApiError(404, "No subscribed channels found.");
   }
