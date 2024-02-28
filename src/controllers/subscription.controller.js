@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Subscription } from "../models/subscription.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -43,14 +44,74 @@ const getChannelSubscribers = asyncHandler(async (req, res) => {
   if (!channelId) {
     throw new ApiError(404, "Channel id is required.");
   }
-  const subscribers = await Subscription.find({ channel: channelId });
+  const subscribers = await Subscription.aggregate([
+    {
+      $match: {
+        channel: new mongoose.Types.ObjectId(channelId),
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "subscriber",
+        foreignField: "_id",
+        as: "subscriber",
+        pipeline: [
+          {
+            $project: {
+              userName: 1,
+              fullName: 1,
+              avatar: 1,
+              coverImg: 1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "channel",
+        foreignField: "_id",
+        as: "channel",
+        pipeline: [
+          {
+            $project: {
+              userName: 1,
+              fullName: 1,
+              avatar: 1,
+              coverImg: 1,
+              email: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        subscriber: {
+          $first: "$subscriber",
+        },
+        channel: {
+          $first: "$channel",
+        },
+      },
+    },
+    {
+      $project: {
+        subscriber: 1,
+        channel: 1,
+      },
+    },
+  ]);
   if (!subscribers) {
     throw new ApiError(404, "No subscribers found.");
   }
 
   return res
     .status(200)
-    .json(new ApiResponse(200, subscribers, "Fetched all subscribers."));
+    .json(new ApiResponse(200, subscribers[0], "Fetched all subscribers."));
 });
 
 const getSubscribedChannels = asyncHandler(async (req, res) => {
