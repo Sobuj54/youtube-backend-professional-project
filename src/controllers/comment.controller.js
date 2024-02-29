@@ -24,4 +24,33 @@ const addComment = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, newComment, "Comment created successfully."));
 });
 
-export { addComment };
+const updateComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  const { content } = req.body;
+  if (!(commentId && content?.trim())) {
+    throw new ApiError(400, "comment id and content is required.");
+  }
+
+  const updatedComment = await Comment.findByIdAndUpdate(
+    commentId,
+    {
+      $set: {
+        content,
+      },
+    },
+    {
+      new: true,
+    }
+  );
+  if (!updatedComment) {
+    throw new ApiError(500, "Comment update failed.");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, updatedComment, "Comment updated successfully.")
+    );
+});
+
+export { addComment, updateComment };
