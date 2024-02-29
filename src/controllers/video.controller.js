@@ -70,52 +70,58 @@ const getAllVideos = asyncHandler(async (req, res) => {
     sort: sortOptions,
   };
 
-  const videoAggregate = Video.aggregate([
+  try {
     //we must not use await before this aggregation because of aggregatePaginate documentation otherwise we won't get proper result.
-    {
-      $match: matchQuery,
-    },
-    {
-      $lookup: {
-        from: "users",
-        localField: "owner",
-        foreignField: "_id",
-        as: "owner",
-        pipeline: [
-          {
-            $project: {
-              _id: 0,
-              userName: 1,
-              fullName: 1,
-            },
-          },
-        ],
+    const videoAggregate = Video.aggregate([
+      {
+        $match: matchQuery,
       },
-    },
-    {
-      $addFields: {
-        owner: {
-          $arrayElemAt: ["$owner", 0], //this gives first element of the array in the field
+      {
+        $lookup: {
+          from: "users",
+          localField: "owner",
+          foreignField: "_id",
+          as: "owner",
+          pipeline: [
+            {
+              $project: {
+                _id: 0,
+                userName: 1,
+                fullName: 1,
+              },
+            },
+          ],
         },
       },
-    },
-    {
-      $project: {
-        title: 1,
-        description: 1,
-        owner: 1,
+      {
+        $addFields: {
+          owner: {
+            $arrayElemAt: ["$owner", 0], //this gives first element of the array in the field
+          },
+        },
       },
-    },
-  ]);
+      {
+        $project: {
+          title: 1,
+          description: 1,
+          owner: 1,
+          duration: 1,
+          views: 1,
+          videoFile: 1,
+          thumbnail: 1,
+        },
+      },
+    ]);
 
-  const result = await Video.aggregatePaginate(videoAggregate, options);
-  if (!result) {
-    throw new ApiError("No result found.");
+    const result = await Video.aggregatePaginate(videoAggregate, options);
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, result, "All videos fetched successfully."));
+  } catch (error) {
+    console.log("video err:", error);
+    throw new ApiError(500, error.message);
   }
-
-  return res
-    .status(200)
-    .json(new ApiResponse(200, result, "All videos fetched successfully."));
 });
 
 const getVideoById = asyncHandler(async (req, res) => {
