@@ -53,4 +53,22 @@ const updateComment = asyncHandler(async (req, res) => {
     );
 });
 
-export { addComment, updateComment };
+const deleteComment = asyncHandler(async (req, res) => {
+  const { commentId } = req.params;
+  if (!commentId) {
+    throw new ApiError(400, "Comment id is required.");
+  }
+
+  const deletedComment = await Comment.findByIdAndDelete(commentId);
+  if (!deletedComment) {
+    throw new ApiError(500, "Comment deletion failed.");
+  }
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(200, deletedComment, "Comment deleted successfully.")
+    );
+});
+
+export { addComment, updateComment, deleteComment };
