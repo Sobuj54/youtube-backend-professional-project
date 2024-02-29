@@ -37,7 +37,6 @@ const publishVideo = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, video, "Video successfully uploaded."));
 });
 
-// TODO: needs bug fixing in following code
 const getAllVideos = asyncHandler(async (req, res) => {
   let {
     page = 1,
@@ -71,14 +70,45 @@ const getAllVideos = asyncHandler(async (req, res) => {
     sort: sortOptions,
   };
 
-  const result = await Video.aggregatePaginate(
-    [
-      {
-        $match: matchQuery,
+  const videoAggregate = Video.aggregate([
+    //we must not use await before this aggregation because of aggregatePaginate documentation otherwise we won't get proper result.
+    {
+      $match: matchQuery,
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              _id: 0,
+              userName: 1,
+              fullName: 1,
+            },
+          },
+        ],
       },
-    ],
-    options
-  );
+    },
+    {
+      $addFields: {
+        owner: {
+          $arrayElemAt: ["$owner", 0], //this gives first element of the array in the field
+        },
+      },
+    },
+    {
+      $project: {
+        title: 1,
+        description: 1,
+        owner: 1,
+      },
+    },
+  ]);
+
+  const result = await Video.aggregatePaginate(videoAggregate, options);
   if (!result) {
     throw new ApiError("No result found.");
   }
