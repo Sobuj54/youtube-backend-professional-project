@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Tweet } from "../models/tweet.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
@@ -28,7 +29,39 @@ const getUserTweets = asyncHandler(async (req, res) => {
     throw new ApiError(400, "User is required.");
   }
 
-  const userTweets = await Tweet.find({ owner: userId });
+  const userTweets = await Tweet.aggregate([
+    { $match: { owner: new mongoose.Types.ObjectId(userId) } },
+    {
+      $lookup: {
+        from: "users",
+        localField: "owner",
+        foreignField: "_id",
+        as: "owner",
+        pipeline: [
+          {
+            $project: {
+              _id: 0,
+              userName: 1,
+              fullName: 1,
+            },
+          },
+        ],
+      },
+    },
+    {
+      $addFields: {
+        owner: {
+          $first: "$owner",
+        },
+      },
+    },
+    {
+      $project: {
+        content: 1,
+        owner: 1,
+      },
+    },
+  ]);
   if (!userTweets?.length) {
     throw new ApiError(404, "No tweets found.");
   }
