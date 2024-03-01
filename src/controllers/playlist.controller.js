@@ -47,6 +47,21 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
       throw new ApiError(404, "No video exists by this id.");
     }
 
+    const isAlreadyAdded = await Playlist.find({
+      videos: { $in: [videoId] },
+    });
+    if (isAlreadyAdded) {
+      return res
+        .status(400)
+        .json(
+          new ApiResponse(
+            400,
+            isAlreadyAdded,
+            "You've already added this in playlist."
+          )
+        );
+    }
+
     const addVideo = await Playlist.findByIdAndUpdate(
       playlistId,
       {
@@ -71,4 +86,39 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
   }
 });
 
-export { createPlaylist, addVideoToPlaylist };
+const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
+  const { playlistId, videoId } = req.params;
+  if (!(playlistId && videoId)) {
+    throw new ApiError(404, "playlist id and video id is required.");
+  }
+
+  try {
+    const playlist = await Playlist.findByIdAndUpdate(
+      playlistId,
+      {
+        $pull: {
+          videos: videoId,
+        },
+      },
+      { new: true }
+    );
+    if (!playlist) {
+      throw new ApiError(404, "No playlist found.");
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          playlist,
+          "Removed video from playlist successfully."
+        )
+      );
+  } catch (error) {
+    console.log("err: ", error);
+    throw new ApiError(500, "Video remove failed.");
+  }
+});
+
+export { createPlaylist, addVideoToPlaylist, removeVideoFromPlaylist };
