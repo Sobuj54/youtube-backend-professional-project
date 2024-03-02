@@ -82,7 +82,7 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
       );
   } catch (error) {
     console.log("err : ", error);
-    throw new ApiError(500, "Video addition to playlist failed.");
+    return res.status(500).json(new ApiResponse(500, {}, error.message));
   }
 });
 
@@ -117,8 +117,40 @@ const removeVideoFromPlaylist = asyncHandler(async (req, res) => {
       );
   } catch (error) {
     console.log("err: ", error);
-    throw new ApiError(500, "Video remove failed.");
+    return res.status(500).json(new ApiResponse(500, {}, error.message));
   }
 });
 
-export { createPlaylist, addVideoToPlaylist, removeVideoFromPlaylist };
+const getPlaylistById = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError(404, "Valid playlist id is required.");
+  }
+
+  try {
+    const playlist = await Playlist.findById(playlistId, {
+      name: 1,
+      description: 1,
+      videos: 1,
+    });
+    if (!playlist) {
+      throw new ApiError(404, "No Playlist found.");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, playlist, "Playlist fetched successfully."));
+  } catch (error) {
+    console.log("err : ", error);
+    return res
+      .status(error.statusCode)
+      .json(new ApiResponse(error.statusCode, {}, error.message));
+  }
+});
+
+export {
+  createPlaylist,
+  addVideoToPlaylist,
+  removeVideoFromPlaylist,
+  getPlaylistById,
+};
