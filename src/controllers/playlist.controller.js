@@ -261,7 +261,32 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     console.log("err : ", error);
     return res
       .status(error.statusCode || 500)
-      .json(new ApiResponse(error.statusCode, {}, error.message));
+      .json(new ApiResponse(error.statusCode || 500, {}, error.message));
+  }
+});
+
+const deletePlaylist = asyncHandler(async (req, res) => {
+  const { playlistId } = req.params;
+  if (!isValidObjectId(playlistId)) {
+    throw new ApiError(400, "Valid playlist id is required.");
+  }
+
+  try {
+    const deletedPlaylist = await Playlist.findByIdAndDelete(playlistId);
+    if (!deletedPlaylist) {
+      throw new ApiError(404, "No playlist exists by this id.");
+    }
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, deletedPlaylist, "playlist deleted successfully.")
+      );
+  } catch (error) {
+    console.log("err : ", error);
+    return res
+      .status(error.statusCode || 500)
+      .json(new ApiError(error.statusCode || 500, {}, error.message));
   }
 });
 
@@ -271,4 +296,5 @@ export {
   removeVideoFromPlaylist,
   getPlaylistById,
   getUserPlaylists,
+  deletePlaylist,
 };
