@@ -156,4 +156,99 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
   }
 });
 
-export { toggleVideoLike, toggleCommentLike };
+const toggleTweetLike = asyncHandler(async (req, res) => {
+  const { tweetId } = req.params;
+  if (!isValidObjectId(tweetId)) {
+    throw new ApiError(400, "Provide valid tweet id");
+  }
+  try {
+    const removeTweet = await Like.findOneAndUpdate(
+      {
+        tweet: tweetId,
+        likedBy: req.user._id,
+        $or: [{ comment: { $exists: true } }, { video: { $exists: true } }],
+      },
+      {
+        $unset: {
+          tweet: true,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+    if (removeTweet) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            removeTweet,
+            "Tweet like field removed successfully."
+          )
+        );
+    }
+
+    const deleteDoc = await Like.findOneAndDelete({
+      tweet: tweetId,
+      likedBy: req.user._id,
+      $and: [{ video: { $exists: false } }, { comment: { $exists: false } }],
+    });
+    if (deleteDoc) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            deleteDoc,
+            "Toggled tweet likes by deleting document."
+          )
+        );
+    }
+
+    const findDoc = await Like.findOneAndUpdate(
+      {
+        likedBy: req.user._id,
+        $or: [{ video: { $exists: true } }, { comment: { $exists: true } }],
+        tweet: { $exists: false },
+      },
+      {
+        $set: {
+          tweet: tweetId,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+    if (findDoc) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            findDoc,
+            "Tweet like toggled by setting tweet field successfully."
+          )
+        );
+    }
+
+    const likeTweet = await Like.create({
+      tweet: tweetId,
+      likedBy: req.user._id,
+    });
+    if (!likeTweet) {
+      throw new ApiError(500, "Tweet like failed.");
+    }
+    return res
+      .status(200)
+      .json(new ApiResponse(200, likeTweet, "Tweet liked successfully."));
+  } catch (error) {
+    console.log("err : ", error);
+    return res
+      .status(error.statusCode || 500)
+      .json(new ApiResponse(error.statusCode || 500, {}, error?.message));
+  }
+});
+
+export { toggleVideoLike, toggleCommentLike, toggleTweetLike };
