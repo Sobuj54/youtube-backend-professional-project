@@ -279,4 +279,68 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
   }
 });
 
-export { toggleVideoLike, toggleCommentLike, toggleTweetLike };
+const getAllLikedVideos = asyncHandler(async (req, res) => {
+  const userId = req.user._id;
+  if (!isValidObjectId(userId)) {
+    throw new ApiError(400, "Valid userid is required.");
+  }
+
+  try {
+    const allLikedVideos = await Like.aggregate([
+      {
+        $match: {
+          likedBy: userId,
+        },
+      },
+      {
+        $lookup: {
+          from: "videos",
+          localField: "video",
+          foreignField: "_id",
+          as: "video",
+          pipeline: [
+            {
+              $project: {
+                videoFile: 1,
+                thumbnail: 1,
+                title: 1,
+                duration: 1,
+              },
+            },
+          ],
+        },
+      },
+      {
+        $addFields: {
+          video: {
+            $arrayElemAt: ["$video", 0],
+          },
+        },
+      },
+      {
+        $project: {
+          video: 1,
+        },
+      },
+    ]);
+    if (!allLikedVideos?.length) {
+      throw new ApiError(404, "No liked videos found.");
+    }
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, allLikedVideos, "Fetched all liked videos."));
+  } catch (error) {
+    console.log("err : ", error);
+    return res
+      .status(error.statusCode || 500)
+      .json(new ApiResponse(error.statusCode || 500, {}, error?.message));
+  }
+});
+
+export {
+  toggleVideoLike,
+  toggleCommentLike,
+  toggleTweetLike,
+  getAllLikedVideos,
+};
