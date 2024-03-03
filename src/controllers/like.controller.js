@@ -43,6 +43,33 @@ const toggleVideoLike = asyncHandler(async (req, res) => {
         .json(new ApiResponse(200, deleteDoc, "Toggled video likes."));
     }
 
+    const findDoc = await Like.findOneAndUpdate(
+      {
+        likedBy: req.user._id,
+        $or: [{ comment: { $exists: true } }, { tweet: { $exists: true } }],
+        video: { $exists: false },
+      },
+      {
+        $set: {
+          video: videoId,
+        },
+      },
+      {
+        new: true,
+      }
+    );
+    if (findDoc) {
+      return res
+        .status(200)
+        .json(
+          new ApiResponse(
+            200,
+            findDoc,
+            "Video like toggled by setting video field successfully."
+          )
+        );
+    }
+
     const likeVideo = await Like.create({
       video: videoId,
       likedBy: req.user._id,
@@ -116,6 +143,7 @@ const toggleCommentLike = asyncHandler(async (req, res) => {
       {
         likedBy: req.user._id,
         $or: [{ video: { $exists: true } }, { tweet: { $exists: true } }],
+        comment: { $exists: false },
       },
       {
         $set: {
